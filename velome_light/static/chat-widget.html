@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velome Chat Widget</title>
+    <link rel="stylesheet" href="chat.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+
+    <div class="velome-chat-widget">
+        <!-- Toggle Button -->
+        <button class="chat-toggle-btn">
+            <!-- Simple chat icon -->
+            <span class="chat-toggle-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z"
+                        fill="white" />
+                </svg>
+            </span>
+        </button>
+
+        <!-- Chat Window -->
+        <div class="chat-window">
+            <div class="chat-header">
+                <div class="header-info">
+                    <div class="avatar-container">
+                        <img src="avatar.png" alt="Velo" class="bot-avatar">
+                        <span class="status-dot"></span>
+                    </div>
+                    <div class="chat-title-group">
+                        <span class="chat-title">Velo</span>
+                        <span class="chat-subtitle">Velome AI Assistant</span>
+                    </div>
+                </div>
+                <button class="close-btn">&times;</button>
+            </div>
+
+            <div class="chat-messages">
+                <!-- Initial Message -->
+                <div class="message bot">
+                    Hi there! 👋 I'm <b>Velo</b>, your travel companion. I can help you with eSIM plans, pricing, and
+                    installation.
+                    <br><br>
+                    <b>How may I assist you today?</b>
+                </div>
+
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" placeholder="Type your message...">
+                <button class="send-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move JS to end -->
+    <script src="chat.js"></script>
+</body>
+
+</html>
