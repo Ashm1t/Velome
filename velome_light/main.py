@@ -37,7 +37,7 @@ if not api_key:
 llm = ChatGroq(
     temperature=0.3,
     groq_api_key=api_key,
-    model_name="llama3-70b-8192" # Using Llama3 on Groq for large context
+    model_name="llama-3.3-70b-versatile" # Updated to supported model
 )
 
 # Template with Context Stuffing
