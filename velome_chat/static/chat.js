@@ -26,7 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function addMessage(text, sender) {
         const div = document.createElement('div');
         div.classList.add('message', sender);
-        div.textContent = text;
+        
+        if (sender === 'bot') {
+            // Parse markdown for bot messages
+            div.innerHTML = marked.parse(text);
+        } else {
+            // Keep user messages as plain text for security
+            div.textContent = text;
+        }
 
         // Insert before typing indicator
         if (typingIndicator && typingIndicator.parentNode === messagesContainer) {

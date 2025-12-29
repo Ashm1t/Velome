@@ -2,16 +2,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 
 :root {
-    --primary-color: #0066cc;
+    --primary-color: #264f63;
     /* Ocean Blue */
-    --accent-color: #00c6ff;
-    /* Cyan Gradient Accent */
-    --text-dark: #1e1e2f;
+    --accent-color: #1b475d;
+    /* Darker Blue */
+    --text-dark: #121215;
+    /* Dark Text */
     --text-light: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.95);
-    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.12);
-    --bot-msg-bg: #f0f4f8;
-    --user-msg-bg: linear-gradient(135deg, #0066cc, #00c6ff);
+    /* Light Glass */
+    --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.15);
+    --bot-msg-bg: #f2f6fa;
+    --user-msg-bg: linear-gradient(135deg, #1b475d, rgb(111, 152, 187));
 }
 
 .velome-chat-widget {
@@ -71,7 +73,6 @@
     width: 32px;
     height: 32px;
     filter: brightness(0) invert(1);
-    /* Make icon white */
 }
 
 /* Chat Window - Glassmorphism */
@@ -104,7 +105,7 @@
 
 /* Header with Gradient */
 .chat-header {
-    background: white;
+    background: var(--primary-color);
     padding: 20px;
     display: flex;
     justify-content: space-between;
@@ -139,7 +140,6 @@
     width: 12px;
     height: 12px;
     background: #00e676;
-    /* Online Green */
     border: 2px solid white;
     border-radius: 50%;
 }
@@ -152,27 +152,27 @@
 .chat-title {
     font-weight: 700;
     font-size: 16px;
-    color: var(--text-dark);
+    color: white;
     letter-spacing: -0.02em;
 }
 
 .chat-subtitle {
     font-size: 12px;
-    color: #8898aa;
+    color: rgba(255, 255, 255, 0.8);
     font-weight: 400;
 }
 
 .close-btn {
     background: transparent;
     border: none;
-    color: #8898aa;
+    color: rgba(255, 255, 255, 0.8);
     font-size: 24px;
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .close-btn:hover {
-    color: var(--text-dark);
+    color: white;
 }
 
 /* Messages Area */
@@ -180,7 +180,7 @@
     flex: 1;
     padding: 20px;
     overflow-y: auto;
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: transparent;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -237,17 +237,18 @@
 .chat-input {
     flex: 1;
     padding: 12px 18px;
-    border: 2px solid #f0f4f8;
+    border: 1px solid #e1e4e8;
     border-radius: 30px;
     font-family: inherit;
     font-size: 14px;
     outline: none;
     transition: all 0.2s;
     background: #f8fbff;
+    color: var(--text-dark);
 }
 
 .chat-input:focus {
-    border-color: #0066cc;
+    border-color: var(--primary-color);
     background: white;
     box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
 }
@@ -316,4 +317,28 @@
 .chat-messages::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.1);
     border-radius: 3px;
+}
+
+/* Markdown Styles within Bot Messages */
+.message.bot p {
+    margin: 0 0 8px 0;
+}
+
+.message.bot p:last-child {
+    margin-bottom: 0;
+}
+
+.message.bot ul,
+.message.bot ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.message.bot li {
+    margin-bottom: 4px;
+}
+
+.message.bot strong {
+    color: var(--accent-color);
+    font-weight: 600;
 }

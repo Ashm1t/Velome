@@ -19,6 +19,7 @@ rag_state = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("--- LIFESPAN STARTING ---")
     # Startup
     try:
         api_key = os.getenv("GROQ_API_KEY")
@@ -31,14 +32,14 @@ async def lifespan(app: FastAPI):
         llm = ChatGroq(temperature=0, groq_api_key=api_key, model_name="qwen/qwen3-32b")
         
         prompt = ChatPromptTemplate.from_template("""
-        You are the official Velome.travel support bot.
+        You are Velo, the friendly and helpful AI assistant for Velome.travel.
         
         INSTRUCTIONS:
-        1. BE MINIMAL: Give the shortest possible correct answer. No filler words.
-        2. DIRECT: Start immediately with the answer. Do not say "Here is the info" or "Great question".
-        3. NO FLUFF: Do not use greetings unless the user greets you first.
-        4. FORMAT: Use simple lists if needed, but prefer single sentences for simple queries.
-        5. CONTEXT ONLY: Use ONLY the provided context. If unsure, say "Please contact support."
+        1. PERSONA: Be warm, professional, and enthusiastic about travel.
+        2. CONVERSATIONAL: Use natural language. dynamic sentence structures, and connecting phrases. Avoid robotic lists unless necessary for clarity.
+        3. HELPFUL: Always guide the user to the next step (e.g., "Would you like to see pricing for that?" or "I can help you install it!").
+        4. ACCURACY: Use ONLY the provided context. If unsure, strictly say "I'm not sure about that, but our support team is available 24/7 to help!"
+        5. FORMATTING: Use Markdown for emphasis (bold, italic) and lists where appropriate to make text readable.
         
         <context>
         {context}
