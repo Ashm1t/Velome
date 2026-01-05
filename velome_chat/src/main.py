@@ -4,18 +4,30 @@ from contextlib import asynccontextmanager
 from src.models import ChatRequest, ChatResponse
 from src.rag import get_vectorstore
 from langchain_groq import ChatGroq
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
 
 # Global state for RAG components
+# Global state for RAG components
 rag_state = {
     "chain": None
 }
+
+# Simple in-memory session store
+store = {}
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,30 +40,68 @@ async def lifespan(app: FastAPI):
         
         print("Initializing RAG system...")
         vectorstore = get_vectorstore()
-        # Use Groq model (Llama3-8b-8192 failed, using user-listed Qwen)
-        llm = ChatGroq(temperature=0, groq_api_key=api_key, model_name="qwen/qwen3-32b")
+        # Use Fast Groq model (Llama 3.1 8B Instant)
+        llm = ChatGroq(temperature=0, groq_api_key=api_key, model_name="llama-3.1-8b-instant")
         
-        prompt = ChatPromptTemplate.from_template("""
-        You are Velo, the friendly and helpful AI assistant for Velome.travel.
+        # 1. History-Aware Retriever (Fixes "Goldfish Memory")
+        contextualize_q_system_prompt = (
+            "Given a chat history and the latest user question "
+            "which might reference context in the chat history, "
+            "formulate a standalone question which can be understood "
+            "without the chat history. Do NOT answer the question, "
+            "just reformulate it if needed and otherwise return it as is."
+        )
+        contextualize_q_prompt = ChatPromptTemplate.from_messages([
+            ("system", contextualize_q_system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}"),
+        ])
         
-        INSTRUCTIONS:
-        1. PERSONA: Be warm, professional, and enthusiastic about travel.
-        2. CONVERSATIONAL: Use natural language. dynamic sentence structures, and connecting phrases. Avoid robotic lists unless necessary for clarity.
-        3. HELPFUL: Always guide the user to the next step (e.g., "Would you like to see pricing for that?" or "I can help you install it!").
-        4. ACCURACY: Use ONLY the provided context. If unsure, strictly say "I'm not sure about that, but our support team is available 24/7 to help!"
-        5. FORMATTING: Use Markdown for emphasis (bold, italic) and lists where appropriate to make text readable.
-        
-        <context>
-        {context}
-        </context>
-
-        Question: {input}
-        """)
-
-        document_chain = create_stuff_documents_chain(llm, prompt)
         retriever = vectorstore.as_retriever()
-        rag_state["chain"] = create_retrieval_chain(retriever, document_chain)
-        print("RAG System Initialized Successfully")
+        history_aware_retriever = create_history_aware_retriever(
+            llm, retriever, contextualize_q_prompt
+        )
+
+        # 2. Natural System Prompt (Fixes Looping/Rigid Behavior)
+        system_prompt = (
+            "You are Velo, a friendly travel expert for Velome.travel. "
+            "Your personality is helpful, concise, and professional (like a helpful WhatsApp contact).\n\n"
+            "YOUR GOALS:\n"
+            "1. Help users find and book the right eSIM.\n"
+            "2. When they mention a destination, confirm it and ask for duration (ONLY if duration isn't in history).\n"
+            "3. Once duration is known, ask for quantity and departure timing (ONLY if not in history).\n"
+            "4. **LOOK UP PRICE**: Check the context for the specific country's 'Daily Rate'. Calculate Total = Rate * Days * Qty.\n"
+            "5. Provide the final calculation and the DIRECT booking link from context.\n"
+            "6. Answer technical/support questions immediately using the context links (e.g., /support, /how-to-use).\n\n"
+            "CONSTRAINTS:\n"
+            "- Stop repeating the same phrase (e.g., 'Vietnam is beautiful') if you've already said it.\n"
+            "- If the user provides a number like '3', check your context/history to see if it refers to days or eSIMs.\n"
+            "- Be brief: 1-2 sentences max.\n"
+            "- Do not provide 'Buy' links until the user is ready (after pricing is shared).\n\n"
+            "Context:\n{context}"
+        )
+
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            MessagesPlaceholder("chat_history"),
+            ("human", "{input}"),
+        ])
+
+        # 3. Combine it all
+        question_answer_chain = create_stuff_documents_chain(llm, prompt)
+        
+        # Create final retrieval chain
+        retrieval_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+        
+        # Wrap with Message History
+        rag_state["chain"] = RunnableWithMessageHistory(
+            retrieval_chain,
+            get_session_history,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+            output_messages_key="answer"
+        )
+        print("RAG System Initialized with History-Aware Retrieval")
     except Exception as e:
         print(f"Failed to initialize RAG system: {e}")
     
@@ -93,7 +143,11 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=503, detail="RAG system is initializing or failed to load.")
     
     try:
-        response = rag_state["chain"].invoke({"input": request.message})
+        # Pass session_id to Config
+        response = rag_state["chain"].invoke(
+            {"input": request.message},
+            config={"configurable": {"session_id": request.session_id}}
+        )
         
         # Clean response of <think> tags (common in reasoning models like Qwen)
         import re

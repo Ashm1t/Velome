@@ -6,37 +6,51 @@ from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from typing import List
 
-# Path to the knowledge base
-KB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "knowledge_base.md")
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "chroma_db")
+# Directory containing the knowledge base files
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+DB_PATH = os.path.join(DATA_DIR, "chroma_db")
 
 def load_and_chunk_documents() -> List[Document]:
-    """Loads the markdown file and splits it into chunks."""
-    # Ensure KB exists
-    if not os.path.exists(KB_PATH):
-        raise FileNotFoundError(f"Knowledge base not found at {KB_PATH}")
+    """Loads all markdown files from the data directory and splits them into chunks."""
+    all_chunks = []
+    
+    # Check if data directory exists
+    if not os.path.exists(DATA_DIR):
+        raise FileNotFoundError(f"Data directory not found at {DATA_DIR}")
 
-    # Read file content
-    with open(KB_PATH, "r", encoding="utf-8") as f:
-        markdown_text = f.read()
+    # Process all .md files in the directory
+    md_files = [f for f in os.listdir(DATA_DIR) if f.endswith(".md")]
+    
+    if not md_files:
+        print("WARNING: No markdown files found in data directory.")
+        return []
 
-    # Split by headers first to keep context
-    headers_to_split_on = [
-        ("#", "Header 1"),
-        ("##", "Header 2"),
-        ("###", "Header 3"),
-    ]
-    markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-    md_header_splits = markdown_splitter.split_text(markdown_text)
+    for filename in md_files:
+        file_path = os.path.join(DATA_DIR, filename)
+        print(f"Indexing: {filename}")
+        
+        with open(file_path, "r", encoding="utf-8") as f:
+            markdown_text = f.read()
 
-    # Then split reasonably sized chunks
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=200,
-        separators=["\n\n", "\n", " ", ""]
-    )
-    splits = text_splitter.split_documents(md_header_splits)
-    return splits
+        # Split by headers first to keep context
+        headers_to_split_on = [
+            ("#", "Header 1"),
+            ("##", "Header 2"),
+            ("###", "Header 3"),
+        ]
+        markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
+        md_header_splits = markdown_splitter.split_text(markdown_text)
+
+        # Then split reasonably sized chunks
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            separators=["\n\n", "\n", " ", ""]
+        )
+        splits = text_splitter.split_documents(md_header_splits)
+        all_chunks.extend(splits)
+    
+    return all_chunks
 
 def get_vectorstore():
     """Returns the Chroma vector store, creating it if it doesn't exist."""

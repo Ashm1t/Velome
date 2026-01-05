@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addMessage(text, sender) {
         const div = document.createElement('div');
         div.classList.add('message', sender);
-        
+
         if (sender === 'bot') {
             // Parse markdown for bot messages
             div.innerHTML = marked.parse(text);
@@ -59,6 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
+    // Generate or retrieve Session ID
+    let sessionId = localStorage.getItem('velo_session_id');
+    if (!sessionId) {
+        sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('velo_session_id', sessionId);
+    }
+
     async function sendMessage() {
         const text = input.value.trim();
         console.log("Sending: ", text);
@@ -77,7 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ message: text })
+                body: JSON.stringify({
+                    message: text,
+                    session_id: sessionId
+                })
             });
 
             const data = await response.json();
